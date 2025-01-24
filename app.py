@@ -169,62 +169,103 @@ with tabs[0]:
 # Model Training Journey Tab
 with tabs[1]:
     st.markdown("### Model Training Journey")
+    
+    # Introduction
     st.write(
         """
-        This section outlines the journey of building the machine learning model, including:
-        - Data preprocessing and feature engineering steps.
-        - Initial model attempts and their accuracies.
-        - Tuning processes and final model performance.
+        This project aimed to predict store turnover for NKD using machine learning techniques. Initially, two models were developed:
+        a Long Short-Term Memory (LSTM) model and an XGBoost model. After comparison, the XGBoost model was chosen for further
+        optimization due to its superior performance.
+        """
+    )
+    
+    # Feature Engineering
+    st.markdown("#### Feature Engineering")
+    st.write(
+        """
+        Several feature engineering techniques were applied to improve model performance:
+        
+        - **Label Encoding**: Used for categorical variables.
+        - **Cyclical Encoding**: Handled cyclical features like day and month to capture the periodic nature of the data.
+        - **Normalization**: Scaled numerical features to ensure consistency in input data.
+        - **Lag Features**: Historical turnover data was used to capture time dependencies.
+        
+        These transformations enabled the model to identify complex patterns in the turnover data.
         """
     )
 
-    # Example Graphs from Training
-    st.markdown("#### Accuracy Over Iterations")
-    accuracy_data = pd.DataFrame({
-        'Iteration': [1, 2, 3, 4, 5],
-        'Accuracy': [0.6, 0.7, 0.78, 0.85, 0.9]
-    })
-    acc_fig = px.line(accuracy_data, x='Iteration', y='Accuracy', title="Model Accuracy Improvement")
-    acc_fig.update_layout(
-        template="plotly_white",
-        xaxis_title="Iteration",
-        yaxis_title="Accuracy",
-        title_x=0.5
+    # Model Comparison
+    st.markdown("#### Model Comparison")
+    st.write(
+        """
+        Two models were compared: LSTM and XGBoost. Despite the LSTM model's ability to handle sequential data, it underperformed
+        compared to the XGBoost model, which demonstrated stronger predictive power. Key results:
+        
+        - **LSTM Performance**:
+            - R²: 0.11 (only explained 10.7% of the variance)
+        
+        - **XGBoost (initial)**:
+            - R²: 0.33 (still room for improvement)
+        """
     )
-    st.plotly_chart(acc_fig, use_container_width=True)
 
-    st.markdown("#### Loss Over Iterations")
-    loss_data = pd.DataFrame({
-        'Iteration': [1, 2, 3, 4, 5],
-        'Loss': [0.4, 0.3, 0.25, 0.2, 0.15]
-    })
-    loss_fig = px.line(loss_data, x='Iteration', y='Loss', title="Model Loss Reduction")
-    loss_fig.update_layout(
-        template="plotly_white",
-        xaxis_title="Iteration",
-        yaxis_title="Loss",
-        title_x=0.5
-    )
-    st.plotly_chart(loss_fig, use_container_width=True)
+        # Display LSTM and XGBoost comparison as separate images side by side
+    col1, col2 = st.columns([1, 1])  # You can adjust the ratio if you want one image to be larger
 
-    st.markdown("#### Feature Importance")
-    feature_importance = pd.DataFrame({
-        'Feature': ['Store No', 'Year', 'Day Sin', 'Day Cos', 'Month Sin', 'Month Cos'],
-        'Importance': [0.2, 0.15, 0.25, 0.1, 0.2, 0.1]
-    })
-    feat_fig = px.bar(feature_importance, x='Feature', y='Importance', title="Feature Importance")
-    feat_fig.update_layout(
-        template="plotly_white",
-        xaxis_title="Feature",
-        yaxis_title="Importance",
-        title_x=0.5
+    with col1:
+        st.image('./previous xgboost graph 1.png', caption='LSTM Performance', use_container_width=True)  # Image 1
+
+    with col2:
+        st.image('./latest actual v pred.png', caption='XGBoost Performance', use_container_width=True)  # Image 2
+
+
+
+    # XGBoost Optimization
+    st.markdown("#### XGBoost Optimization")
+    st.write(
+        """
+        The XGBoost model was fine-tuned with the following hyperparameters:
+        
+        - Learning Rate: 0.01
+        - Maximum Depth: 4
+        - Minimum Child Weight: 5
+        - Regularization Parameters: Reg Alpha (0.7), Reg Lambda (1.0)
+        - Subsample: 0.8
+        - Colsample By Tree: 0.8
+        - Boosting Rounds: 500
+        - Early Stopping: 40 rounds
+        
+        After optimization, the model achieved the following results:
+        
+        - **MAE**: 6.48
+        - **MSE**: 124.53
+        - **R²**: 0.96 (explains 96% of variance)
+        """
     )
-    st.plotly_chart(feat_fig, use_container_width=True)
+
+    col3, col4 = st.columns([1, 1])  # You can adjust the ratio if you want one image to be larger
+
+    with col3:
+        st.image('./final xgboost 1.png', caption='Actual vs Predicted Turnover', use_container_width=True)  # Image 1
+
+    with col4:
+        st.image('./final xgboost 2.png', caption='Scatter plot', use_container_width=True)  # Image 2
+
+    # Final Conclusion
+    st.markdown("#### Conclusion")
+    st.write(
+        """
+        The optimized XGBoost model demonstrated excellent predictive performance, with a high R² score of 0.96. This model was
+        then integrated into an interactive dashboard, enabling stakeholders to visualize turnover forecasts and make informed
+        business decisions based on data-driven insights.
+        """
+    )
+
 
 # Footer
 st.markdown(
     """
     ---
-    #### Powered by Machine Learning and Streamlit
+    #### Authors: Irtaza Janjua, Soman Tariq, Annalena Wieser
     """
 )
