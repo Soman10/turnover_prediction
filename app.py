@@ -32,8 +32,8 @@ st.sidebar.header("Prediction Inputs")
 
 # Function to load model and scaler
 def load_model_and_scaler():
-    model_path = 'D:\\Projects\\turnover_prediction\\xgboost_model_2023.json'
-    scaler_path = 'D:\\Projects\\turnover_prediction\\target_scaler.pkl'
+    model_path = './xgboost_model_2023.json'
+    scaler_path = './target_scaler.pkl'
 
     try:
         model = xgb.Booster()
@@ -47,7 +47,7 @@ def load_model_and_scaler():
 model, target_scaler = load_model_and_scaler()
 
 # Load the store dataset
-store_data = pd.read_csv('D:\\Projects\\turnover_prediction\\preprocessed_data_2.csv')
+store_data = pd.read_csv('./preprocessed_data_2.csv')
 
 # Function to generate cyclical features
 def generate_cyclical_features(date):
