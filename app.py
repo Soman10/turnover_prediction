@@ -6,7 +6,6 @@ from sklearn.preprocessing import MinMaxScaler
 from datetime import timedelta
 import joblib
 import plotly.express as px
-import plotly.graph_objects as go
 
 # Page configuration
 st.set_page_config(
@@ -106,6 +105,11 @@ def predict_turnover(store_nos, start_date, num_days=14):
 # Sidebar inputs
 store_nos = st.sidebar.multiselect("Select Store Numbers", store_data['store_no'].unique())
 
+# Add "Select All" checkbox
+select_all = st.sidebar.checkbox("Select All Stores")
+if select_all:
+    store_nos = store_data['store_no'].unique()
+
 # Dynamic date range input
 start_date = st.sidebar.date_input("Start Date", value=pd.Timestamp('2024-01-01'))
 days_to_predict = st.sidebar.slider("Number of Days to Predict", min_value=7, max_value=30, value=14)
@@ -115,56 +119,73 @@ tabs = st.tabs(["Dashboard", "Model Training Journey"])
 
 # Dashboard Tab
 with tabs[0]:
-    # Predict button
+    # Prediction and visualization logic
     if st.sidebar.button("Predict Turnover"):
-        if not store_nos:
+        if len(store_nos) == 0:
             st.sidebar.warning("Please select at least one store.")
         else:
-            st.markdown(f"### Turnover Predictions for Store(s) {', '.join(map(str, store_nos))}")
+            if select_all:
+                st.markdown("### Turnover Predictions for All Stores")
 
-            with st.spinner("Generating predictions..."):
-                predictions = predict_turnover(store_nos, start_date, days_to_predict)
+                with st.spinner("Generating predictions..."):
+                    predictions = predict_turnover(store_nos, start_date, days_to_predict)
 
-            # Display predictions
-            st.dataframe(predictions, use_container_width=True)
+                # Display predictions in a table
+                st.write(predictions)
 
-            # Metrics
-            total_turnover = predictions.groupby('Store No')['Predicted Turnover'].sum()
-            avg_turnover = predictions.groupby('Store No')['Predicted Turnover'].mean()
-            for store_no in store_nos:
-                st.metric(label=f"Total Predicted Turnover for Store {store_no}", value=f"{total_turnover[store_no]:,.2f}")
-                st.metric(label=f"Average Daily Turnover for Store {store_no}", value=f"{avg_turnover[store_no]:,.2f}")
+                # Add download button for all stores' predictions
+                csv = predictions.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download All Predictions as CSV",
+                    data=csv,
+                    file_name=f"turnover_predictions_all_stores.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.markdown(f"### Turnover Predictions for Store(s) {', '.join(map(str, store_nos))}")
+                
+                with st.spinner("Generating predictions..."):
+                    predictions = predict_turnover(store_nos, start_date, days_to_predict)
 
-            # Line Chart with Plotly for Comparison
-            fig = px.line(predictions, x='Date', y='Predicted Turnover', color='Store No', 
-                          title="Turnover Forecast Comparison", markers=True)
-            fig.update_layout(
-                template="plotly_white",
-                xaxis_title="Date",
-                yaxis_title="Predicted Turnover",
-                title_x=0.5
-            )
-            st.plotly_chart(fig, use_container_width=True)
+                st.dataframe(predictions, use_container_width=True)
 
-            # Bar Chart for Comparison
-            bar_fig = px.bar(predictions, x='Date', y='Predicted Turnover', color='Store No', 
-                             title="Daily Turnover Breakdown Comparison")
-            bar_fig.update_layout(
-                template="plotly_white",
-                xaxis_title="Date",
-                yaxis_title="Turnover",
-                title_x=0.5
-            )
-            st.plotly_chart(bar_fig, use_container_width=True)
+                # Metrics for all stores
+                total_turnover = predictions.groupby('Store No')['Predicted Turnover'].sum()
+                avg_turnover = predictions.groupby('Store No')['Predicted Turnover'].mean()
+                for store_no in store_nos:
+                    st.metric(label=f"Total Predicted Turnover for Store {store_no}", value=f"{total_turnover[store_no]:,.2f}")
+                    st.metric(label=f"Average Daily Turnover for Store {store_no}", value=f"{avg_turnover[store_no]:,.2f}")
 
-            # Download CSV
-            csv = predictions.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Predictions as CSV",
-                data=csv,
-                file_name=f"turnover_predictions_stores_{'_'.join(map(str, store_nos))}.csv",
-                mime="text/csv"
-            )
+                # Line Chart with Plotly for Comparison
+                fig = px.line(predictions, x='Date', y='Predicted Turnover', color='Store No',
+                              title="Turnover Forecast Comparison", markers=True)
+                fig.update_layout(
+                    template="plotly_white",
+                    xaxis_title="Date",
+                    yaxis_title="Predicted Turnover",
+                    title_x=0.5
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Bar Chart for Comparison
+                bar_fig = px.bar(predictions, x='Date', y='Predicted Turnover', color='Store No',
+                                 title="Daily Turnover Breakdown Comparison")
+                bar_fig.update_layout(
+                    template="plotly_white",
+                    xaxis_title="Date",
+                    yaxis_title="Turnover",
+                    title_x=0.5
+                )
+                st.plotly_chart(bar_fig, use_container_width=True)
+
+                # Download CSV for individual store predictions
+                csv = predictions.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Predictions as CSV",
+                    data=csv,
+                    file_name=f"turnover_predictions_stores_{'_'.join(map(str, store_nos))}.csv",
+                    mime="text/csv"
+                )
 
 # Model Training Journey Tab
 with tabs[1]:
@@ -218,6 +239,15 @@ with tabs[1]:
     with col2:
         st.image('./latest actual v pred.png', caption='XGBoost Performance', use_container_width=True)  # Image 2
 
+            # Display LSTM and XGBoost comparison as separate images side by side
+    col3, col4 = st.columns([1, 1])  # You can adjust the ratio if you want one image to be larger
+
+    with col3:
+        st.image('./lstm_scatter_plot.png', caption='LSTM Scatter Plot', use_container_width=True)  # Image 1
+
+    with col4:
+        st.image('./xgboost_scatter_plot.png', caption='XGBoost Scatter Plot', use_container_width=True)  # Image 2
+
 
 
     # XGBoost Optimization
@@ -243,12 +273,12 @@ with tabs[1]:
         """
     )
 
-    col3, col4 = st.columns([1, 1])  # You can adjust the ratio if you want one image to be larger
+    col5, col6 = st.columns([1, 1])  # You can adjust the ratio if you want one image to be larger
 
-    with col3:
+    with col5:
         st.image('./final xgboost 1.png', caption='Actual vs Predicted Turnover', use_container_width=True)  # Image 1
 
-    with col4:
+    with col6:
         st.image('./final xgboost 2.png', caption='Scatter plot', use_container_width=True)  # Image 2
 
     # Final Conclusion
